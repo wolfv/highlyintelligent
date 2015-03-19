@@ -1,3 +1,6 @@
 # project_2.py
 
-i
+import numpy as np
+
+from matplotlib import plot as plt
+
