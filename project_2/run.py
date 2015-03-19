@@ -30,10 +30,11 @@ def read_file(filename):
 def run():
 	X_read = read_file("data/train.csv")
 	Y_read = read_file("data/train_y.csv")
-	if ipython:
-		ip.embed()
+	try:
+		if ipython:
+			ip.embed()
+	except:
+		print("Well, you're supposed to have iPython but something went wrong...")
 
 if __name__ == '__main__':
 	run()
-
-
