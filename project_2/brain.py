@@ -13,6 +13,10 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.cross_validation import train_test_split
 from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
 from sklearn.ensemble import RandomForestClassifier
+
+import neurolab as nl
+
+
 ipython = False
 try:
     import IPython as ip
@@ -66,8 +70,6 @@ def run(args):
 
     Y_read = read_file("data/train_y.csv")
 
-    lb = LabelBinarizer()
-
     X_data = X_read[:,9:]
     Y_data = Y_read
     # X_data = binarize(X_read[:, 0], 5, append_to=X_data)
@@ -80,6 +82,18 @@ def run(args):
     # X_data = binarize(X_read[:, 7], 10, append_to=X_data)
     # X_data = binarize(X_read[:, 8], 20, append_to=X_data)
     # X_data = binarize(X_read[:, 9], 5, append_to=X_data)
+    input_type = np.zeros((X_data.shape[1], 2))
+    print(input_type)
+    input_type[:, 1] = 1
+    network = nl.net.newff(input_type, [30, 30, 10])
+    print(network.layers)
+    for n in network.layers:
+        print(n.ci)
+    bin_input = binarize(Y_data[:, 0], 3)
+    bin_input = binarize(Y_data[:, 1], 7, bin_input)
+    print(bin_input)
+    print(bin_input.shape)
+    network.train(X_data, bin_input, show=1)
 
     for i in range(0, int(args.samplesize)):
         X_train, X_test, Y_train, Y_test = train_test_split(X_data, Y_data, test_size=0.2)
@@ -136,4 +150,3 @@ def run(args):
 if __name__ == '__main__':
     args = parser.parse_args()
     run(args)
-    

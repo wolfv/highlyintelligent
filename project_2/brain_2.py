@@ -13,6 +13,10 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.cross_validation import train_test_split
 from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
 from sklearn.ensemble import RandomForestClassifier
+
+import neurolab as nl
+
+
 ipython = False
 try:
     import IPython as ip
@@ -60,16 +64,20 @@ def binarize(val, steps, append_to=None):
         return ret_arr
     return ret
 
+# def inverse_transform(res_arr):
+#     for line in res_arr:
+
+
 
 def run(args):
     X_read = read_file("data/train.csv")
 
     Y_read = read_file("data/train_y.csv")
 
-    lb = LabelBinarizer()
-
-    X_data = X_read[:,9:]
+    X_data = X_read
     Y_data = Y_read
+
+
     # X_data = binarize(X_read[:, 0], 5, append_to=X_data)
     # X_data = binarize(X_read[:, 1], 5, append_to=X_data)
     # X_data = binarize(X_read[:, 2], 5, append_to=X_data)
@@ -78,46 +86,34 @@ def run(args):
     # X_data = binarize(X_read[:, 5], 10, append_to=X_data)
     # X_data = binarize(X_read[:, 6], 5, append_to=X_data)
     # X_data = binarize(X_read[:, 7], 10, append_to=X_data)
-    # X_data = binarize(X_read[:, 8], 20, append_to=X_data)
+    # X_data = binarize(X_read[:, 8], 10, append_to=X_data)
     # X_data = binarize(X_read[:, 9], 5, append_to=X_data)
+
 
     for i in range(0, int(args.samplesize)):
         X_train, X_test, Y_train, Y_test = train_test_split(X_data, Y_data, test_size=0.2)
         
+        input_type = np.zeros((X_data.shape[1], 2))
+        input_type[:, 1] = 1
+        for j in range(0, 9):
+            input_type[j, :] = np.array([np.min(X_data[:,j]), np.max(X_data[:,j])])
 
-        X_train_a, X_train_b, Y_train_a, Y_train_b = train_test_split(X_train, Y_train, test_size=0.5)
-        labels = np.left_shift(Y_train_a[:,0], 4) + Y_train_a[:,1]
+        network = nl.net.newff(input_type, [X_data.shape[1], 10])
+        network.trainf = nl.train.train_bfgs
+        # for n in network.layers:
+        #     print(n.ci)
+        bin_input = binarize(Y_data[:, 0], 3)
+        bin_input = binarize(Y_data[:, 1], 7, bin_input)
+        network.train(X_data, bin_input, show=1)
 
-        # lb.set_params("classes_", ["a", "b"])
-        # bin_labels = lb.transform(Y_train)
-        classifier_y0 = SVC(kernel="rbf", probability=True)
-        classifier_y0.fit(X_train_a, labels)
-
-        intermediate_prediction = classifier_y0.predict(X_train_b)
-        X_train_b = binarize(intermediate_prediction, 25, X_train_b)
-        labels = np.left_shift(Y_train_b[:,0], 4) + Y_train_b[:,1]
-
-        classifier_y1 = RandomForestClassifier(n_estimators=40).fit(X_train_b, labels)
-
-        inter_test = classifier_y0.predict(X_test)
-        X_test = binarize(inter_test, 25, X_test)
-
-        prediction = classifier_y1.predict(X_test)
-        result = np.zeros((prediction.shape[0], 2))
-        result[:, 0] = np.transpose(np.right_shift(prediction, 4))
-        result[:, 1] = np.transpose(np.bitwise_and(prediction, 15))
-        # print(col_a, col_b )
-        # prediction = np.hstack((col_a, col_b))
-        print("PREDICTION")
+        bin_input = binarize(Y_test[:, 0], 3)
+        bin_input = binarize(Y_test[:, 1], 7, bin_input)
+        result = network.sim(X_test)
         print(result)
-        # prediction = np.zeros(Y_test.shape)
-        # prediction[:,0] = classifier_y0.predict(X_test)
-        
-        # X_train = binarize(classifier_y0.predict(X_train), 7, append_to=X_train)
-        # classifier_y1 = OneVsRestClassifier(LinearSVC(random_state=0)).fit(X_train, Y_train[:,1])
-        # prediction[:,1] = classifier_y1.predict(binarize(prediction[:,0], 7, X_test))
+        print(Y_test)
+        # result = inverse_transform(result)
 
-        print("%s Run, Error: %s" % (i, error(Y_test, result)))
+        # print("%s Run, Error: %s" % (i, error(Y_test, result)))
 
     if args.testfile:
         X_testfile = read_file(args.testfile)
@@ -136,4 +132,3 @@ def run(args):
 if __name__ == '__main__':
     args = parser.parse_args()
     run(args)
-    
